@@ -539,6 +539,10 @@ UINT16 GKI_update_timer_list (TIMER_LIST_Q *p_timer_listq, INT32 num_units_since
     INT32            rem_ticks;
     INT32            temp_ticks;
 
+#ifdef RTL_8723BS_BT_USED 
+    GKI_disable();
+#endif
+
     p_tle = p_timer_listq->p_first;
 
     /* First, get the guys who have previously timed out */
@@ -571,7 +575,9 @@ UINT16 GKI_update_timer_list (TIMER_LIST_Q *p_timer_listq, INT32 num_units_since
         rem_ticks -= temp_ticks;  /* Decrement the remaining ticks to process */
         p_tle = p_tle->p_next;
     }
-
+#ifdef RTL_8723BS_BT_USED
+    GKI_enable();
+#endif
     return (num_time_out);
 }
 
@@ -699,11 +705,16 @@ void GKI_add_to_timer_list (TIMER_LIST_Q *p_timer_listq, TIMER_LIST_ENT  *p_tle)
 BOOLEAN GKI_remove_from_timer_list (TIMER_LIST_Q *p_timer_listq, TIMER_LIST_ENT  *p_tle)
 {
     UINT8 tt;
-
+#ifdef RTL_8723BS_BT_USED
+    GKI_disable();
+#endif
     /* Verify that the entry is valid */
-    if (p_tle == NULL || p_timer_listq->p_first == NULL)
-        return FALSE;
-
+    if (p_tle == NULL || p_timer_listq->p_first == NULL){
+#ifdef RTL_8723BS_BT_USED
+        GKI_enable();
+#endif
+		return FALSE;
+	}
     /* Add the ticks remaining in this timer (if any) to the next guy in the list.
     ** Note: Expired timers have a tick value of '0'.
     */
@@ -740,17 +751,27 @@ BOOLEAN GKI_remove_from_timer_list (TIMER_LIST_Q *p_timer_listq, TIMER_LIST_ENT 
         {
             if (p_tle->p_next != NULL && p_tle->p_next->p_prev == p_tle)
                 p_tle->p_next->p_prev = p_tle->p_prev;
-            else
+            else {
+#ifdef RTL_8723BS_BT_USED
+				GKI_enable();
+#endif
                 return FALSE; // Timer list broken?!
-
+			}
             if (p_tle->p_prev != NULL && p_tle->p_prev->p_next == p_tle)
                 p_tle->p_prev->p_next = p_tle->p_next;
-            else
+            else {
+#ifdef RTL_8723BS_BT_USED
+				GKI_enable();
+#endif
                 return FALSE; // Timer list broken?!
-        }
+			}
+		}
     }
 
     p_tle->p_next = p_tle->p_prev = NULL;
+#ifdef RTL_8723BS_BT_USED
+    GKI_enable();
+#endif
     return TRUE;
 }
 

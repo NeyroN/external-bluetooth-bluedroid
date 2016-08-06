@@ -116,6 +116,14 @@ ifeq ($(TARGET_PRODUCT), full_maguro)
 	LOCAL_CFLAGS += -DTARGET_MAGURO
 endif
 
+ifeq ($(BOARD_HAVE_BLUETOOTH_NAME), rtl8723bs)
+LOCAL_CFLAGS += -DRTL_8723BS_BT_USED
+endif
+
+ifeq ($(BOARD_HAVE_BLUETOOTH_NAME), rtl8723bs_vq0)
+LOCAL_CFLAGS += -DRTL_8723BS_BT_USED
+endif
+
 LOCAL_SHARED_LIBRARIES := \
 	libcutils \
 	libdl \

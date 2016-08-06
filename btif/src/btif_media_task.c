@@ -169,7 +169,11 @@ enum {
 #endif
 
 /* Middle quality quality setting @ 44.1 khz */
+#ifndef RTL_8723BS_BT_USED  
 #define DEFAULT_SBC_BITRATE 328
+#else
+#define DEFAULT_SBC_BITRATE 229
+#endif
 
 #ifndef BTIF_A2DP_NON_EDR_MAX_RATE
 #define BTIF_A2DP_NON_EDR_MAX_RATE 229

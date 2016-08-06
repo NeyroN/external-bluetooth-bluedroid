@@ -531,6 +531,10 @@ bt_status_t btif_enable_bluetooth(void)
 
     if (btif_core_state != BTIF_CORE_STATE_DISABLED)
     {
+#ifdef RTL_8723BS_BT_USED
+        usleep(10000); /* 10 milliseconds */
+        kill(getpid(), SIGKILL);
+#endif
         ALOGD("not disabled\n");
         return BT_STATUS_DONE;
     }
@@ -1250,6 +1254,10 @@ bt_status_t btif_set_adapter_property(const bt_property_t *property)
                 BTA_DmSetDeviceName((char *)bd_name);
 
                 storage_req_id = BTIF_CORE_STORAGE_ADAPTER_WRITE;
+#ifdef RTL_8723BS_BT_USED
+                btif_config_set_str("Local", "Adapter", "Name", (char *)bd_name);
+                btif_config_save();
+#endif
             }
             break;
 

@@ -124,6 +124,9 @@ typedef struct _hc_buffer_hdr
 
 extern bt_hc_callbacks_t *bt_hc_cbacks;
 
+#ifdef HCI_USE_RTK_H5
+extern uint8_t h5_log_enable;
+#endif
 /******************************************************************************
 **  Functions
 ******************************************************************************/

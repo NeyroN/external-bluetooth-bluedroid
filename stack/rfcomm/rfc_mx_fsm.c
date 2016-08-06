@@ -36,6 +36,17 @@
 #define L2CAP_SUCCESS   0
 #define L2CAP_ERROR     1
 
+#ifdef RTL_8723BS_BT_USED
+const tL2CAP_FCR_OPTS rfcomm_l2c_fcr_opts_def =
+{
+    L2CAP_FCR_ERTM_MODE,            /* Mandatory for OBX */
+    OBX_FCR_OPT_TX_WINDOW_SIZE_BR_EDR,     /* Tx window size */
+    OBX_FCR_OPT_MAX_TX_B4_DISCNT,   /* Maximum transmissions before disconnecting */
+    OBX_FCR_OPT_RETX_TOUT,          /* Retransmission timeout (2 secs) */
+    OBX_FCR_OPT_MONITOR_TOUT,       /* Monitor timeout (12 secs) */
+    L2CAP_MPS_OVER_BR_EDR            /* MPS segment size */
+};
+#endif
 
 /********************************************************************************/
 /*              L O C A L    F U N C T I O N     P R O T O T Y P E S            */
@@ -113,6 +124,10 @@ void rfc_mx_sm_execute (tRFC_MCB *p_mcb, UINT16 event, void *p_data)
 *******************************************************************************/
 void rfc_mx_sm_state_idle (tRFC_MCB *p_mcb, UINT16 event, void *p_data)
 {
+#ifdef RTL_8723BS_BT_USED
+	tL2CAP_ERTM_INFO ertm_info;
+#endif 
+
     RFCOMM_TRACE_EVENT ("rfc_mx_sm_state_idle - evt:%d", event);
     switch (event)
     {
@@ -120,9 +135,18 @@ void rfc_mx_sm_state_idle (tRFC_MCB *p_mcb, UINT16 event, void *p_data)
 
         /* Initialize L2CAP MTU */
         p_mcb->peer_l2cap_mtu = L2CAP_DEFAULT_MTU - RFCOMM_MIN_OFFSET - 1;
-
+#ifdef RTL_8723BS_BT_USED
+        ertm_info.preferred_mode    = L2CAP_FCR_ERTM_MODE;
+        ertm_info.allowed_modes     = L2CAP_FCR_CHAN_OPT_ALL_MASK;
+        ertm_info.user_rx_pool_id   = OBX_USER_RX_POOL_ID;
+        ertm_info.user_tx_pool_id   = OBX_USER_TX_POOL_ID;
+        ertm_info.fcr_rx_pool_id    = OBX_FCR_RX_POOL_ID;
+        ertm_info.fcr_tx_pool_id    = OBX_FCR_TX_POOL_ID;
+        if ((p_mcb->lcid = L2CA_ErtmConnectReq (BT_PSM_RFCOMM, p_mcb->bd_addr, &ertm_info)) == 0)
+#else
         if ((p_mcb->lcid = L2CA_ConnectReq (BT_PSM_RFCOMM, p_mcb->bd_addr)) == 0)
-        {
+#endif
+		{
             PORT_StartCnf (p_mcb, RFCOMM_ERROR);
             return;
         }
@@ -142,7 +166,19 @@ void rfc_mx_sm_state_idle (tRFC_MCB *p_mcb, UINT16 event, void *p_data)
     case RFC_MX_EVENT_CONN_IND:
 
         rfc_timer_start (p_mcb, RFCOMM_CONN_TIMEOUT);
+#ifndef RTL_8723BS_BT_USED
         L2CA_ConnectRsp (p_mcb->bd_addr, *((UINT8 *)p_data), p_mcb->lcid, L2CAP_CONN_OK, 0);
+#else
+
+        ertm_info.preferred_mode    = rfcomm_l2c_fcr_opts_def.mode;
+        ertm_info.allowed_modes     = L2CAP_FCR_CHAN_OPT_ALL_MASK;
+        ertm_info.user_rx_pool_id   = OBX_USER_RX_POOL_ID;
+        ertm_info.user_tx_pool_id   = OBX_USER_TX_POOL_ID;
+        ertm_info.fcr_rx_pool_id    = OBX_FCR_RX_POOL_ID;
+        ertm_info.fcr_tx_pool_id    = OBX_FCR_TX_POOL_ID;
+
+        L2CA_ErtmConnectRsp (p_mcb->bd_addr, *((UINT8 *)p_data), p_mcb->lcid, L2CAP_CONN_OK, L2CAP_CONN_OK, &ertm_info);
+#endif
 
         rfc_mx_send_config_req (p_mcb);
 
@@ -486,6 +522,9 @@ void rfc_mx_sm_state_connected (tRFC_MCB *p_mcb, UINT16 event, void *p_data)
 void rfc_mx_sm_state_disc_wait_ua (tRFC_MCB *p_mcb, UINT16 event, void *p_data)
 {
     BT_HDR *p_buf;
+#ifdef RTL_8723BS_BT_USED
+	tL2CAP_ERTM_INFO ertm_info;
+#endif
 
     RFCOMM_TRACE_EVENT ("rfc_mx_sm_state_disc_wait_ua - evt:%d", event);
     switch (event)
@@ -497,8 +536,19 @@ void rfc_mx_sm_state_disc_wait_ua (tRFC_MCB *p_mcb, UINT16 event, void *p_data)
 
         if (p_mcb->restart_required)
         {
+#ifdef RTL_8723BS_BT_USED
+            ertm_info.preferred_mode    = L2CAP_FCR_ERTM_MODE;
+            ertm_info.allowed_modes     = L2CAP_FCR_CHAN_OPT_ALL_MASK;
+            ertm_info.user_rx_pool_id   = OBX_USER_RX_POOL_ID;
+            ertm_info.user_tx_pool_id   = OBX_USER_TX_POOL_ID;
+            ertm_info.fcr_rx_pool_id    = OBX_FCR_RX_POOL_ID;
+            ertm_info.fcr_tx_pool_id    = OBX_FCR_TX_POOL_ID;
+
             /* Start Request was received while disconnecting.  Execute it again */
+            if ((p_mcb->lcid = L2CA_ErtmConnectReq (BT_PSM_RFCOMM, p_mcb->bd_addr, &ertm_info)) == 0)
+#else
             if ((p_mcb->lcid = L2CA_ConnectReq (BT_PSM_RFCOMM, p_mcb->bd_addr)) == 0)
+#endif
             {
                 PORT_StartCnf (p_mcb, RFCOMM_ERROR);
                 return;
@@ -562,13 +612,22 @@ void rfc_mx_sm_state_disc_wait_ua (tRFC_MCB *p_mcb, UINT16 event, void *p_data)
 static void rfc_mx_send_config_req (tRFC_MCB *p_mcb)
 {
     tL2CAP_CFG_INFO cfg;
-
+#ifdef RTL_8723BS_BT_USED
+    const tL2CAP_FCR_OPTS *p_opt;
+    p_opt = &rfcomm_l2c_fcr_opts_def;
+#endif 
     RFCOMM_TRACE_EVENT ("rfc_mx_send_config_req");
 
     memset (&cfg, 0, sizeof (tL2CAP_CFG_INFO));
 
     cfg.mtu_present      = TRUE;
     cfg.mtu              = L2CAP_MTU_SIZE;
+#ifdef RTL_8723BS_BT_USED
+    cfg.fcr_present = TRUE;
+    memcpy(&cfg.fcr, p_opt, sizeof (tL2CAP_FCR_OPTS));
+    cfg.fcs_present = TRUE;
+    cfg.fcs = (0x11 & 0x01);
+#endif 
 
 /* Defaults set by memset
     cfg.flush_to_present = FALSE;

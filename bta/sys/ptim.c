@@ -26,7 +26,10 @@
 #include "gki.h"
 #include "ptim.h"
 #include "bta_sys.h"
-
+#ifdef RTL_8723BS_BT_USED
+#include <cutils/log.h>
+static pthread_mutex_t pt_time_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
 /*******************************************************************************
 **
 ** Function         ptim_init
@@ -126,6 +129,10 @@ void ptim_timer_update(tPTIM_CB *p_cb)
 *******************************************************************************/
 void ptim_start_timer(tPTIM_CB *p_cb, TIMER_LIST_ENT *p_tle, UINT16 type, INT32 timeout)
 {
+#ifdef RTL_8723BS_BT_USED
+    pthread_mutex_lock(&pt_time_mutex);
+#endif
+
     /* if timer list is currently empty, start periodic GKI timer */
     if (p_cb->timer_queue.p_first == NULL)
     {
@@ -140,6 +147,10 @@ void ptim_start_timer(tPTIM_CB *p_cb, TIMER_LIST_ENT *p_tle, UINT16 type, INT32 
     p_tle->ticks_initial = timeout;
 
     GKI_add_to_timer_list(&p_cb->timer_queue, p_tle);
+
+#ifdef RTL_8723BS_BT_USED
+    pthread_mutex_unlock(&pt_time_mutex);
+#endif
 }
 
 /*******************************************************************************

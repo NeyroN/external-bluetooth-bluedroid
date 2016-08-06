@@ -323,7 +323,11 @@
 // How long to wait before activating sniff mode after entering the
 // idle state for FTS, OPS connections
 #ifndef BTA_FTS_OPS_IDLE_TO_SNIFF_DELAY_MS
+#ifndef RTL_8723BS_BT_USED
 #define BTA_FTS_OPS_IDLE_TO_SNIFF_DELAY_MS 7000
+#else
+#define BTA_FTS_OPS_IDLE_TO_SNIFF_DELAY_MS 30000
+#endif
 #endif
 
 //------------------End added from bdroid_buildcfg.h---------------------
@@ -853,7 +857,11 @@ and USER_HW_DISABLE_API macros */
 
 /* The default scan mode */
 #ifndef BTM_DEFAULT_SCAN_TYPE
+#ifndef RTL_8723BS_BT_USED
 #define BTM_DEFAULT_SCAN_TYPE       BTM_SCAN_TYPE_INTERLACED
+#else
+#define BTM_DEFAULT_SCAN_TYPE       BTM_SCAN_TYPE_STANDARD //RTK Modified
+#endif
 #endif
 
 /* Should connections to unknown devices be allowed when not discoverable? */
@@ -3646,7 +3654,11 @@ The maximum number of payload octets that the local device can receive in a sing
 ******************************************************************************/
 
 #ifndef HCILP_INCLUDED
+#ifndef RTL_8723BS_BT_USED
 #define HCILP_INCLUDED                  TRUE
+#else
+#define HCILP_INCLUDED               FALSE		//TRUE
+#endif
 #endif
 
 /******************************************************************************
